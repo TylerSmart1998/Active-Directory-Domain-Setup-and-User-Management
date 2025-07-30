@@ -1,73 +1,71 @@
-<p align="center">
-<img src="https://i.imgur.com/pU5A58S.png" alt="Microsoft Active Directory Logo"/>
-</p>
+# Active Directory Lab Guide
 
-<h1>On-premises Active Directory Deployed in the Cloud (Azure)</h1>
-This tutorial outlines the implementation of on-premises Active Directory within Azure Virtual Machines.<br />
+## Part 1: Install Active Directory and Setup Domain
 
+1. **Login to DC-1** and install **Active Directory Domain Services**.
+2. Promote DC-1 as a Domain Controller:
+   - Setup a new forest: `mydomain.com` (replace with your domain name).
+3. Restart DC-1 and log in as: `mydomain.com\labuser`.
+4. Open **Active Directory Users and Computers (ADUC)**:
+   - Create Organizational Units (OUs):
+     - `_EMPLOYEES`
+     - `_ADMINS`
+   - Create user:
+     - Name: Jane Doe
+     - Username: `jane_admin`
+     - Password: 
+   - Add `jane_admin` to the **Domain Admins** security group.
+5. Log out and log back in as `mydomain.com\jane_admin`.  
+   From now on, use `jane_admin` as your admin account.
+6. **Join Client-1 to the domain**:
+   - Log in to Client-1 locally as `labuser`.
+   - Join domain: `mydomain.com`.
+   - Restart Client-1.
+7. On DC-1, verify **Client-1** shows in ADUC.
+8. Create a new OU: `_CLIENTS`.
+9. Move the Client-1 computer object into the `_CLIENTS` OU.
 
-<h2>Environments and Technologies Used</h2>
+---
 
-- Microsoft Azure (Virtual Machines/Compute)
-- Active Directory Domain Services
+## Part 2: Remote Desktop Setup & Bulk User Creation
 
-<h2>Operating Systems Used </h2>
+1. Power on DC-1 and Client-1 VMs if off.
+2. On Client-1, logged in as `mydomain.com\jane_admin`:
+   - Open **System Properties**.
+   - Go to **Remote Desktop** tab.
+   - Enable Remote Desktop.
+   - Allow **Domain Users** group remote desktop access.
+3. On DC-1, log in as `jane_admin`.
+4. Open **PowerShell ISE** as Administrator.
+5. Create and run a script to bulk-create users in the `_EMPLOYEES` OU.
+6. Verify new users in ADUC under `_EMPLOYEES`.
+7. Test logging into Client-1 with one of the new users (use the script’s password).
 
-- Windows Server 2022
-- Windows 10 (21H2)
+---
 
-<h2>High-Level Deployment and Configuration Steps</h2>
+## Part 3: Account Lockout Policy
 
-- Install Active Directory
-- Create a Domain Admin user within the domain
-- Join Client-1 to your domain
+1. Log into DC-1 as `jane_admin`.
+2. Pick a user and try logging in with a bad password 10 times.
+3. Configure **Group Policy** to lock out accounts after **5** failed login attempts:
+   - Open Group Policy Management.
+   - Edit Default Domain Policy or create a new GPO.
+   - Navigate to: `Computer Configuration -> Policies -> Windows Settings -> Security Settings -> Account Policies -> Account Lockout Policy`.
+   - Set **Account lockout threshold** to 5 invalid attempts.
+4. Try logging in 6 times with a bad password.
+5. Verify the user is locked out in Active Directory.
+6. Unlock the user account.
+7. Reset the user’s password.
+8. Attempt login with the correct password.
 
-<h2>Deployment and Configuration Steps</h2>
+---
 
-<p>
+## Part 4: Enable/Disable Accounts & Logs
 
-
-![image](https://github.com/user-attachments/assets/fc027ad0-1247-4c5e-8fa6-0c2c92bc93ab)
-
-</p>
-<p>
-Login to DC-1 and install Active Directory Domain Services.
-Promote as a DC: Setup a new forest as mydomain.com (can be anything, just remember what it is.)
-Restart and then log back into DC-1 as user: mydomain.com\labuser
-
-</p>
-<br />
-
-<p>
-
-
-![image](https://github.com/user-attachments/assets/1773d99b-f4c0-4697-bba4-1dab60154813)
-
-In Active Directory Users and Computers (ADUC), create an Organizational Unit (OU) called “_EMPLOYEES.”
-Create a new OU named “_ADMINS.”
-Create a new employee named “Jane Doe” (same password) with the username of “jane_admin.” 
-Add jane_admin to the “Domain Admins” Security Group.
-Log out / close the connection to DC-1 and log back in as “mydomain.com\jane_admin.”
-Use jane_admin as your admin account from now on.
-
-</p>
-<p>
-</p>
-<br />
-
-<p>
-
-
-![image](https://github.com/user-attachments/assets/60a24478-ea65-40ac-8031-0539ff5bbafd)
-
-
-</p>
-<p>
-From the Azure Portal, set Client-1’s DNS settings to the DC’s Private IP address.
-From the Azure Portal, restart Client-1.
-Login to Client-1 as the original local admin and join it to the domain (computer will restart.)
-Login to the Domain Controller and verify Client-1 shows up in ADUC.
-Create a new OU named “_CLIENTS” and drag Client-1 into there.
-
-</p>
-<br />
+1. Disable the test user account in Active Directory.
+2. Attempt to log in with the disabled account (expect failure).
+3. Re-enable the user account.
+4. Attempt to log in again (should succeed).
+5. Review Event Logs:
+   - On **Domain Controller (DC-1)**: check Security logs for account lockouts and logins.
+   - On **Client-1**: check logs for Remote Desktop and login events.
